@@ -148,6 +148,40 @@ SHOW CREATE TABLE t1;
 DROP TABLE t1;
 
 --echo #
+--echo # MDEV-14611 ALTER TABLE EXCHANGE PARTITION does not work
+--echo #                 properly when used with DATA DIRECTORY
+--echo #
+let $data_dir_path= $MYSQLTEST_VARDIR/mysql-test-data-dir;
+SET GLOBAL innodb_file_per_table = ON;
+--replace_result $MYSQLTEST_VARDIR MYSQLTEST_VARDIR
+eval CREATE TABLE t1
+(
+    myid INT(11) NOT NULL,
+    myval VARCHAR(10),
+    PRIMARY KEY (myid)
+) ENGINE=INNODB PARTITION BY KEY (myid)
+  (
+   PARTITION p0001 DATA DIRECTORY = '$data_dir_path' ENGINE = INNODB,
+   PARTITION p0002 DATA DIRECTORY = '$data_dir_path' ENGINE = INNODB,
+   PARTITION p0003 DATA DIRECTORY = '$data_dir_path' ENGINE = INNODB,
+   PARTITION p0004 DATA DIRECTORY = '$data_dir_path' ENGINE = INNODB
+  );
+
+--replace_result $MYSQLTEST_VARDIR MYSQLTEST_VARDIR
+eval CREATE TABLE t2
+(
+   myid INT(11) NOT NULL,
+   myval VARCHAR(10),
+   PRIMARY KEY (myid)
+) ENGINE=INNODB DATA DIRECTORY = '$data_dir_path';
+  
+ALTER TABLE t1 EXCHANGE PARTITION p0001 WITH TABLE t2;
+
+--replace_result $MYSQLTEST_VARDIR MYSQLTEST_VARDIR
+SHOW CREATE TABLE t1;
+DROP TABLE t1, t2;
+
+--echo #
 --echo # Cleanup
 --echo #
 
